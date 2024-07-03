@@ -73,6 +73,8 @@ public:
 
   double get_position() { return node_canopen_402_driver_->get_position(); }
 
+  double get_effort() { return node_canopen_402_driver_->get_effort(); }
+
   bool set_target(double target) { return node_canopen_402_driver_->set_target(target); }
 
   bool init_motor() { return node_canopen_402_driver_->init_motor(); }

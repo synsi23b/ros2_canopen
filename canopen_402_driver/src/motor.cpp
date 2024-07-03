@@ -47,12 +47,17 @@ uint16_t Motor402::getMode()
 
 bool Motor402::isModeSupportedByDevice(uint16_t mode)
 {
-  uint32_t supported_modes =
-    driver->universal_get_value<uint32_t>(supported_drive_modes_index, 0x0);
-  bool supported = supported_modes & (1 << (mode - 1));
+  if(supported_modes_ == 0)
+  {
+    supported_modes_ = driver->universal_get_value<uint32_t>(supported_drive_modes_index, 0x0);
+  }
+
+  bool supported = supported_modes_ & (1 << (mode - 1));
   bool below_max = mode <= 32;
   bool above_min = mode > 0;
-  return below_max && above_min && supported;
+  bool ret = below_max && above_min && supported;
+  //RCLCPP_INFO(rclcpp::get_logger("canopen_402_driver"), "Device reported available Modes: %x, Driver wanted mode: %x, Supported: %d", supported_modes, mode, ret);
+  return ret;
 }
 void Motor402::registerMode(uint16_t id, const ModeSharedPtr & m)
 {
@@ -179,6 +184,7 @@ bool Motor402::switchState(const State402::InternalState & target)
     std::chrono::steady_clock::now() + state_switch_timeout_;
   State402::InternalState state = state_handler_.getState();
   target_state_ = target;
+  RCLCPP_INFO(rclcpp::get_logger("canopen_402_driver"), "Switch state:  %d -> %d", state, target);
   while (state != target_state_)
   {
     std::unique_lock lock(cw_mutex_);
@@ -194,9 +200,10 @@ bool Motor402::switchState(const State402::InternalState & target)
       this->diag_collector_->addf("cia402_state", "State switched to: %d", next);
     }
     lock.unlock();
+    RCLCPP_INFO(rclcpp::get_logger("canopen_402_driver"), "set Transition:  %d -> %d", state, next);
     if (state != next && !state_handler_.waitForNewState(abstime, state))
     {
-      RCLCPP_INFO(rclcpp::get_logger("canopen_402_driver"), "Transition timed out.");
+      RCLCPP_INFO(rclcpp::get_logger("canopen_402_driver"), "Transition timed out:  %d -> %d", state, next);
       if (enable_diagnostics_.load())
       {
         this->diag_collector_->addf(

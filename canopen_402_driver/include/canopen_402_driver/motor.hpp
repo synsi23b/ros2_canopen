@@ -61,9 +61,10 @@ class Motor402 : public MotorBase
 public:
   Motor402(
     std::shared_ptr<LelyDriverBridge> driver, ros2_canopen::State402::InternalState switching_state)
-  : MotorBase(), switching_state_(switching_state), monitor_mode_(true), state_switch_timeout_(5)
+  : MotorBase(), switching_state_(switching_state), monitor_mode_(true), state_switch_timeout_(50)
   {
     this->driver = driver;
+    supported_modes_ = 0;
   }
 
   virtual bool setTarget(double val);
@@ -175,6 +176,7 @@ public:
   }
 
   double get_speed() const { return (double)this->driver->universal_get_value<int32_t>(0x606C, 0); }
+  double get_effort() const { return (double)this->driver->universal_get_value<int32_t>(0x4000, 0); }
   double get_position() const
   {
     return (double)this->driver->universal_get_value<int32_t>(0x6064, 0);
@@ -222,6 +224,8 @@ private:
   const uint16_t op_mode_display_index = 0x6061;
   const uint16_t op_mode_index = 0x6060;
   const uint16_t supported_drive_modes_index = 0x6502;
+
+  uint32_t supported_modes_;
 
   // Diagnostic components
   std::atomic<bool> enable_diagnostics_;
