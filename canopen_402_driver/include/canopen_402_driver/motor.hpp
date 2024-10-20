@@ -176,7 +176,7 @@ public:
   }
 
   double get_speed() const { return (double)this->driver->universal_get_value<int32_t>(0x606C, 0); }
-  double get_effort() const { return (double)this->driver->universal_get_value<int32_t>(0x4000, 0); }
+  double get_effort() const { return (double)this->driver->universal_get_value<int32_t>(0x6077, 0); }
   double get_position() const
   {
     return (double)this->driver->universal_get_value<int32_t>(0x6064, 0);
