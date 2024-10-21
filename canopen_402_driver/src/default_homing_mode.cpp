@@ -60,12 +60,14 @@ bool DefaultHomingMode::executeHoming()
   }
   /// @ get abs time from canopen_master
   std::chrono::steady_clock::time_point prepare_time =
-    std::chrono::steady_clock::now() + std::chrono::seconds(1);
+    std::chrono::steady_clock::now() + std::chrono::seconds(10);
   // ensure homing is not running
   std::unique_lock lock(mutex_);
+  std::cout << "Status 1: " << status_ << std::endl;
   if (!cond_.wait_until(
         lock, prepare_time, masked_status_not_equal<MASK_Error | MASK_Reached, 0>(status_)))
   {
+    std::cout << "Status 2: " << status_ << std::endl;
     return error("could not prepare homing");
   }
   if (status_ & MASK_Error)
@@ -74,12 +76,13 @@ bool DefaultHomingMode::executeHoming()
   }
 
   execute_ = true;
-
+  std::cout << "Status 3: " << status_ << std::endl;
   // ensure start
   if (!cond_.wait_until(
         lock, prepare_time,
         masked_status_not_equal<MASK_Error | MASK_Attained | MASK_Reached, MASK_Reached>(status_)))
   {
+    std::cout << "Status 4: " << status_ << std::endl;
     return error("homing did not start");
   }
   if (status_ & MASK_Error)
@@ -90,10 +93,12 @@ bool DefaultHomingMode::executeHoming()
   std::chrono::steady_clock::time_point finish_time =
     std::chrono::steady_clock::now() + std::chrono::seconds(10);  //
 
+  std::cout << "Status 5: " << status_ << std::endl;
   // wait for attained
   if (!cond_.wait_until(
         lock, finish_time, masked_status_not_equal<MASK_Error | MASK_Attained, 0>(status_)))
   {
+    std::cout << "Status 6: " << status_ << std::endl;
     return error("homing not attained");
   }
   if (status_ & MASK_Error)
@@ -102,9 +107,11 @@ bool DefaultHomingMode::executeHoming()
   }
 
   // wait for motion stop
+  std::cout << "Status 7: " << status_ << std::endl;
   if (!cond_.wait_until(
         lock, finish_time, masked_status_not_equal<MASK_Error | MASK_Reached, 0>(status_)))
   {
+    std::cout << "Status 8: " << status_ << std::endl;
     return error("homing did not stop");
   }
   if (status_ & MASK_Error)
@@ -112,6 +119,7 @@ bool DefaultHomingMode::executeHoming()
     return error("homing error during stop");
   }
 
+  std::cout << "Status 9: " << status_ << std::endl;
   if ((status_ & MASK_Reached) && (status_ & MASK_Attained))
   {
     execute_ = false;
